@@ -5,18 +5,18 @@ android {
     buildToolsVersion '20.0.0'
 
     defaultConfig {
-        applicationId "com.jams.music.player"
+
         minSdkVersion 14
         targetSdkVersion 19
 
         //RenderScript backward compatibility for guassian blurs.
         renderscriptTargetApi 19
-        renderscriptSupportMode true
+        renderscriptSupportModeEnabled true
     }
 
     buildTypes {
         release {
-            runProguard true
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
         }
     }
