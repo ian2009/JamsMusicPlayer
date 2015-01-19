@@ -33,7 +33,12 @@ import com.jams.music.player.DBHelpers.MediaStoreAccessHelper;
 import com.jams.music.player.FoldersFragment.FileExtensionFilter;
 import com.jams.music.player.R;
 import com.jams.music.player.Services.BuildMusicLibraryService;
+import com.jams.music.player.TechPodcastClient.TPClient;
 import com.jams.music.player.Utils.Common;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -127,7 +132,16 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
 
 	@Override
     protected Void doInBackground(String... params) {
-		
+
+        //Added by Ian
+        try {
+            TPClient.getMedias(this);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        Log.d(this.getClass().toString(), "Invoked TPClient.getMedias()");
+        /////////////////////////////////////////////////////
+
 		/* 
 		 * Get a cursor of songs from MediaStore. The cursor 
 		 * is limited by the folders that have been selected 
@@ -394,8 +408,131 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
     	}
 
 	}
-	
-	/**
+
+    public void saveTechPodcastMedias(JSONArray myMedias) {
+        try {
+            //Initialize the database transaction manually (improves performance).
+            mApp.getDBAccessHelper().getWritableDatabase().beginTransaction();
+
+            //Iterate through MediaStore's cursor and save the fields to Jams' DB.
+            for (int i=0; i < myMedias.length(); ++i) {
+                JSONObject obj = null;
+                try {
+                    obj = (JSONObject)(myMedias.get(i));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                String songTitle = "";
+                try {
+                    songTitle = obj.getString("title");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                String songArtist = "";
+                String songAlbum = "";
+                String songAlbumId = "";
+                String songAlbumArtist = "";
+                String songFilePath = "";
+                try {
+                    songFilePath = obj.getString("url");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                String songGenre = "";
+                String songDuration = "";
+                String songTrackNumber = "1";
+                String songYear = "";
+                String songDateAdded = "";
+                String songDateModified = "";
+                String songId = "";
+                try {
+                    songId = obj.getString("digest");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                String numberOfAlbums = "1";
+                String numberOfTracks = "1";
+                String numberOfSongsInGenre = "1";
+                String songSource = DBAccessHelper.LOCAL;
+                String songSavedPosition = "-1";
+
+                String songAlbumArtPath = "";
+
+
+                //Check if any of the other tags were empty/null and set them to "Unknown xxx" values.
+                if (songArtist==null || songArtist.isEmpty()) {
+                    songArtist = mContext.getResources().getString(R.string.unknown_artist);
+                }
+
+                if (songAlbumArtist==null || songAlbumArtist.isEmpty()) {
+                    if (songArtist!=null && !songArtist.isEmpty()) {
+                        songAlbumArtist = songArtist;
+                    } else {
+                        songAlbumArtist = mContext.getResources().getString(R.string.unknown_album_artist);
+                    }
+
+                }
+
+                if (songAlbum==null || songAlbum.isEmpty()) {
+                    songAlbum = mContext.getResources().getString(R.string.unknown_album);;
+                }
+
+                if (songGenre==null || songGenre.isEmpty()) {
+                    songGenre = mContext.getResources().getString(R.string.unknown_genre);
+                }
+
+                long durationLong = 0;
+                try {
+                    durationLong = Long.parseLong(songDuration);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                ContentValues values = new ContentValues();
+                values.put(DBAccessHelper.SONG_TITLE, songTitle);
+                values.put(DBAccessHelper.SONG_ARTIST, songArtist);
+                values.put(DBAccessHelper.SONG_ALBUM, songAlbum);
+                values.put(DBAccessHelper.SONG_ALBUM_ARTIST, songAlbumArtist);
+                values.put(DBAccessHelper.SONG_DURATION, convertMillisToMinsSecs(durationLong));
+                values.put(DBAccessHelper.SONG_FILE_PATH, songFilePath);
+                values.put(DBAccessHelper.SONG_TRACK_NUMBER, songTrackNumber);
+                values.put(DBAccessHelper.SONG_GENRE, songGenre);
+                values.put(DBAccessHelper.SONG_YEAR, songYear);
+                values.put(DBAccessHelper.SONG_ALBUM_ART_PATH, songAlbumArtPath);
+                values.put(DBAccessHelper.SONG_LAST_MODIFIED, songDateModified);
+                values.put(DBAccessHelper.SONG_ALBUM_ART_PATH, songAlbumArtPath);
+                values.put(DBAccessHelper.BLACKLIST_STATUS, false);
+                values.put(DBAccessHelper.ADDED_TIMESTAMP, date.getTime());
+                values.put(DBAccessHelper.RATING, 0);
+                values.put(DBAccessHelper.LAST_PLAYED_TIMESTAMP, songDateModified);
+                values.put(DBAccessHelper.SONG_SOURCE, songSource);
+                values.put(DBAccessHelper.SONG_ID, songId);
+                values.put(DBAccessHelper.SAVED_POSITION, songSavedPosition);
+                values.put(DBAccessHelper.ALBUMS_COUNT, numberOfAlbums);
+                values.put(DBAccessHelper.SONGS_COUNT, numberOfTracks);
+                values.put(DBAccessHelper.GENRE_SONG_COUNT, numberOfSongsInGenre);
+
+                //Add all the entries to the database to build the songs library.
+                mApp.getDBAccessHelper().getWritableDatabase().insert(DBAccessHelper.MUSIC_LIBRARY_TABLE,
+                        null,
+                        values);
+
+                Log.d("TPClient", "Add music: [" + songTitle + "]");
+
+            }
+
+        } catch (SQLException e) {
+            // TODO Auto-generated method stub.
+            e.printStackTrace();
+        } finally {
+            //Close the transaction.
+            mApp.getDBAccessHelper().getWritableDatabase().setTransactionSuccessful();
+            mApp.getDBAccessHelper().getWritableDatabase().endTransaction();
+        }
+
+    }
+
+    /**
 	 * Constructs the selection string for limiting the MediaStore 
 	 * query to specific music folders.
 	 */
