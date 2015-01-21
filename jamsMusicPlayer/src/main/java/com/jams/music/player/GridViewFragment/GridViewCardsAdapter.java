@@ -50,6 +50,7 @@ import com.jams.music.player.Dialogs.CautionEditArtistsDialog;
 import com.jams.music.player.Dialogs.ID3sArtistEditorDialog;
 import com.jams.music.player.Helpers.TypefaceHelper;
 import com.jams.music.player.Helpers.UIElementsHelper;
+import com.jams.music.player.ImageTransformers.PicassoCircularTransformer;
 import com.jams.music.player.R;
 import com.jams.music.player.Utils.Common;
 import com.squareup.picasso.Picasso;
@@ -231,10 +232,31 @@ public class GridViewCardsAdapter extends SimpleCursorAdapter implements Scrolla
 		mHolder.titleText.setText(titleText);
         mHolder.subText.setText(field1);
 
+        //mHolder.gridViewArt.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        //mHolder.gridViewArt.setImageDrawable(mApp.getResources().getDrawable(R.drawable.changelog));
+
+        mApp.getPicasso().load(R.drawable.changelog)
+                .placeholder(UIElementsHelper.getEmptyColorPatch(mContext))
+                .fit()
+                .into(mHolder.gridViewArt);
+        Log.d("TPClient", "Load from resource id with fit");
+
+
+        /*
+        //Ian
+        artworkPath = "http://i.imgur.com/DvpvklR.png";
+        mApp.getPicasso().setIndicatorsEnabled(true);
+        Log.d("TPClient", "mApp.getPicasso().setIndicatorsEnabled");
+        ///////////////////////////////////////////////////
+
 		//Load the album art.
         mApp.getPicasso().load(artworkPath)
                          .placeholder(UIElementsHelper.getEmptyColorPatch(mContext))
                          .into(mHolder.gridViewArt);
+
+
+        Log.d("TPClient", "load image : " + artworkPath);
+
 
         //Preload the next 6 album art images.
         for (int i=position; i < position+6; i++) {
@@ -242,26 +264,32 @@ public class GridViewCardsAdapter extends SimpleCursorAdapter implements Scrolla
                 break;
 
             Cursor tempCursor = (Cursor) getItem(i);
-            mApp.getPicasso().load(tempCursor.getString(tempCursor.getColumnIndex(DBAccessHelper.SONG_ALBUM_ART_PATH))).into(new Target() {
+            //String img = tempCursor.getString(tempCursor.getColumnIndex(DBAccessHelper.SONG_ALBUM_ART_PATH));
+
+            //Ian
+            final String img = artworkPath;
+
+            mApp.getPicasso().load(img).into(new Target() {
 
                 @Override
                 public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-
+                    Log.d("TPClient", "loaded Bitmap for " + img );
                 }
 
                 @Override
                 public void onBitmapFailed(Drawable errorDrawable) {
-
+                    Log.d("TPClient", "Failed to load Bitmap for " + img);
                 }
 
                 @Override
                 public void onPrepareLoad(Drawable placeHolderDrawable) {
-
+                    Log.d("TPClient", "onPrepareLoad Bitmap for " + img);
                 }
 
             });
 
         }
+        */
 
 		return convertView;
 	}
