@@ -16,6 +16,19 @@ public class MediaInfo {
     private String url = "";
     private String description = "";
     private String digest = "";
+    private String category = "";
+
+    public void setDigest(String digest) {
+        this.digest = digest;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
 
     public String getTitle() {
         return title;

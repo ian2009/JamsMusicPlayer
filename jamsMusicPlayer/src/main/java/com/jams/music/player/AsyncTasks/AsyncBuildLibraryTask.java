@@ -33,6 +33,7 @@ import com.jams.music.player.DBHelpers.MediaStoreAccessHelper;
 import com.jams.music.player.FoldersFragment.FileExtensionFilter;
 import com.jams.music.player.R;
 import com.jams.music.player.Services.BuildMusicLibraryService;
+import com.jams.music.player.TechPodcastClient.Category;
 import com.jams.music.player.TechPodcastClient.TPClient;
 import com.jams.music.player.Utils.Common;
 
@@ -135,7 +136,7 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
 
         //Added by Ian
         try {
-            TPClient.getMedias(this);
+            TPClient.ins().getMedias(this);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -417,7 +418,7 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
 
 	}
 
-    public void saveTechPodcastMedias(JSONArray myMedias) {
+     public synchronized void saveTechPodcastMedias (JSONArray myMedias, final Category category) {
         try {
             //Initialize the database transaction manually (improves performance).
             mApp.getDBAccessHelper().getWritableDatabase().beginTransaction();
@@ -436,17 +437,17 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                String songArtist = "songArtist";
-                String songAlbum = "ChangeLog";
+                String songArtist = category.getName();
+                String songAlbum = category.getName();
                 String songAlbumId = "";
-                String songAlbumArtist = "albumArtist";
+                String songAlbumArtist = category.getName();
                 String songFilePath = "";
                 try {
                     songFilePath = obj.getString("url");
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                String songGenre = "";
+                String songGenre = category.getName();
                 String songDuration = "";
                 String songTrackNumber = "1";
                 String songYear = "";
