@@ -133,7 +133,7 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
 
 	@Override
     protected Void doInBackground(String... params) {
-
+        mCurrentTask = mContext.getResources().getString(R.string.building_music_library);
         //Added by Ian
         try {
             TPClient.ins().getMedias(this);
@@ -143,18 +143,17 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
         Log.d(this.getClass().toString(), "Invoked TPClient.getMedias()");
         /////////////////////////////////////////////////////
 
-		/* 
-		 * Get a cursor of songs from MediaStore. The cursor 
-		 * is limited by the folders that have been selected 
+		/*
+		 * Get a cursor of songs from MediaStore. The cursor
+		 * is limited by the folders that have been selected
 		 * by the user.
 		 */
-		mCurrentTask = mContext.getResources().getString(R.string.building_music_library);
         if (false) {
 
             Cursor mediaStoreCursor = getSongsFromMediaStore();
-		
-		/* 
-		 * Transfer the content in mediaStoreCursor over to 
+
+		/*
+		 * Transfer the content in mediaStoreCursor over to
 		 * Jams' private database.
 		 */
             if (mediaStoreCursor != null) {
@@ -176,7 +175,7 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
         {
             publishProgress(new String[]{"MEDIASTORE_TRANSFER_COMPLETE"});
         }
-		
+
     	return null;
     }
 	

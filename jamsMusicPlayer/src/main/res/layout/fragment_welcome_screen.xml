@@ -23,7 +23,7 @@
         android:layout_alignLeft="@+id/welcome_header"
         android:layout_below="@+id/welcome_header"
         android:layout_marginTop="25dp"
-        android:text="@string/welcome_text_1"
+        android:text="@string/welcome_tp_1"
         android:layout_marginRight="30dp"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 

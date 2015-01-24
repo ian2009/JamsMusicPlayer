@@ -13,16 +13,16 @@ import org.json.JSONException;
 import org.json.JSONArray;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class TPClient {
     private static final String BASE_URL = "http://www.idesignforce.com/techpodcast/";
     private static final String VER_URL = "ver.php";
     private static AsyncHttpClient client = new AsyncHttpClient();
-
-    private static TPClient instance = null;
+    private static final TPClient instance = new TPClient();
+    private CountDownLatch countDownLatchDir = null;
+    private CountDownLatch countDownLatchCategory = null;
 
     public static void get(String url, RequestParams params, AsyncHttpResponseHandler responseHandler) {
         client.get(getAbsoluteUrl(url), params, responseHandler);
@@ -37,15 +37,36 @@ public class TPClient {
     }
 
     public static synchronized TPClient ins() {
-        if (instance == null) {
-            instance = new TPClient();
-        }
         return instance;
     }
 
+    public void onDirectoryResponse(boolean isOk) {
+        if (this.countDownLatchDir != null) {
+            this.countDownLatchDir.countDown();
+        }
+    }
+
+    public void setCategoryNum(int num) {
+        if (num > 0) {
+            this.countDownLatchCategory = new CountDownLatch(num);
+        }
+    }
+
+    public void onCategoryResponse(boolean isOk) {
+        if (this.countDownLatchCategory != null) {
+            this.countDownLatchCategory.countDown();
+        }
+    }
 
     public void getMedias(final AsyncBuildLibraryTask task) throws JSONException {
+        this.countDownLatchDir = new CountDownLatch(1);
         TPClient.get(VER_URL, null, new DirectoyHandler(task));
+        try {
+            this.countDownLatchDir.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        this.countDownLatchDir = null;
     }
 
     public void getMedias(final AsyncBuildLibraryTask task, final Category category) {
@@ -59,8 +80,8 @@ public class TPClient {
             this.task = task;
         }
 
-        @Override
-        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+
+        public void onSuccessInternal(int statusCode, Header[] headers, JSONObject response) {
             // If the response is JSONObject instead of expected JSONArray
             Log.d("TPClient", "Only ONE JSONObject");
             Directory dir = new Directory();
@@ -101,17 +122,53 @@ public class TPClient {
                 if (c.getName().length() < 1 || c.getQueryUrl().length() < 1) continue;
 
                 csMap.put(c.getName(), c);
+            }
 
-                //Get the medias.
+            if (csMap.size() > 0) {
+                setCategoryNum(csMap.size());
+            }
+
+            //Get the medias.
+            for (Map.Entry<String, Category> entry : csMap.entrySet())
+            {
+                Category c = entry.getValue();
                 getMedias(this.task, c);
             }
+
+            if (countDownLatchCategory != null) {
+                try {
+                    countDownLatchCategory.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            countDownLatchCategory = null;
 
             Log.d("TPClient", dir.toString());
         }
 
         @Override
-        public void onSuccess(int statusCode, Header[] headers, JSONArray myMedias) {
+        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+            onSuccessInternal(statusCode, headers, response);
+            onDirectoryResponse(true);
+        }
 
+        @Override
+        public void onSuccess(int statusCode, Header[] headers, JSONArray myMedias) {
+            onDirectoryResponse(true);
+        }
+
+        @Override
+        public void onFailure(java.lang.Throwable throwable, org.json.JSONObject jsonObject) {
+            super.onFailure(throwable, jsonObject);
+            onDirectoryResponse(false);
+        }
+
+        @Override
+        public void onFailure(java.lang.Throwable throwable, org.json.JSONArray jsonArray) {
+            super.onFailure(throwable, jsonArray);
+            onDirectoryResponse(false);
         }
     }
 
@@ -126,6 +183,7 @@ public class TPClient {
 
         @Override
         public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+            onCategoryResponse(false);
         }
 
         @Override
@@ -134,7 +192,19 @@ public class TPClient {
             Log.d("TPClient", "Total: " + myMedias.length());
             Log.d("TPClient", "Will invoke saving to DB");
             task.saveTechPodcastMedias(myMedias, this.category);
+            onCategoryResponse(true);
+        }
+
+        @Override
+        public void onFailure(java.lang.Throwable throwable, org.json.JSONObject jsonObject) {
+            super.onFailure(throwable, jsonObject);
+            onCategoryResponse(false);
+        }
+
+        @Override
+        public void onFailure(java.lang.Throwable throwable, org.json.JSONArray jsonArray) {
+            super.onFailure(throwable, jsonArray);
+            onCategoryResponse(false);
         }
     }
-
 }
