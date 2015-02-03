@@ -75,6 +75,39 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
 	private PowerManager pm;
 	private PowerManager.WakeLock wakeLock;
 
+    private class __TPInfo {
+        private String url;
+
+        public String getIsFavorite() {
+            return isFavorite;
+        }
+
+        public void setIsFavorite(String isFavorite) {
+            this.isFavorite = isFavorite;
+        }
+
+        private String isFavorite;
+
+        public String getLocalFile() {
+            return localFile;
+        }
+
+        public void setLocalFile(String localFile) {
+            this.localFile = localFile;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        private String localFile;
+    }
+
+
 	public AsyncBuildLibraryTask(Context context, BuildMusicLibraryService service) {
 		mContext = context;
 		mApp = (Common) mContext;
@@ -418,9 +451,40 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
 	}
 
      public synchronized void saveTechPodcastMedias (JSONArray myMedias, final Category category) {
+         HashMap<String, __TPInfo> olds = new HashMap<String, __TPInfo>(100);
+         android.database.sqlite.SQLiteDatabase db = null;
         try {
+            db = mApp.getDBAccessHelper().getWritableDatabase();
             //Initialize the database transaction manually (improves performance).
-            mApp.getDBAccessHelper().getWritableDatabase().beginTransaction();
+            db.beginTransaction();
+
+            //get the old ones.
+            if (true) {
+                Cursor cursor = db.query(DBAccessHelper.MUSIC_LIBRARY_TABLE,
+                        new String[] {DBAccessHelper.SONG_FILE_PATH, DBAccessHelper.TP_IS_FAVORITE,
+                        DBAccessHelper.TP_LOCAL_FILE},
+                        String.format("%s = ? or length(%s) > 0",
+                                DBAccessHelper.TP_IS_FAVORITE, DBAccessHelper.TP_LOCAL_FILE),
+                        new String[] { "T"}, null, null, null);
+                if (cursor != null) {
+                    cursor.moveToFirst();
+                    while (!cursor.isAfterLast()) {
+                        __TPInfo info = new __TPInfo();
+                        info.setUrl(cursor.getString(0));
+                        info.setIsFavorite(cursor.getString(1) != null?cursor.getString(1):DBAccessHelper.TP_NON_FAV);
+                        info.setLocalFile(cursor.getString(2) != null?cursor.getString(2):"");
+                        olds.put(info.getUrl(), info);
+                        cursor.moveToNext();
+                    }
+                    // make sure to close the cursor
+                    cursor.close();
+                }
+            }
+
+            //Clear out the table.
+            db.delete(DBAccessHelper.MUSIC_LIBRARY_TABLE,
+                    String.format("%s = ?", DBAccessHelper.SONG_ALBUM),
+                    new String[]{category.getName()});
 
             //Iterate through MediaStore's cursor and save the fields to Jams' DB.
             for (int i=0; i < myMedias.length(); ++i) {
@@ -463,8 +527,16 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
                 String numberOfSongsInGenre = "1";
                 String songSource = DBAccessHelper.LOCAL;
                 String songSavedPosition = "-1";
-
                 String songAlbumArtPath = "";
+                String isFav = DBAccessHelper.TP_NON_FAV;
+                String localFile = "";
+
+                //Check the olds.
+                __TPInfo curInfo = olds.get(songFilePath);
+                if (curInfo != null) {
+                    isFav = curInfo.getIsFavorite();
+                    localFile = curInfo.getLocalFile();
+                }
 
 
                 //Check if any of the other tags were empty/null and set them to "Unknown xxx" values.
@@ -519,6 +591,8 @@ public class AsyncBuildLibraryTask extends AsyncTask<String, String, Void> {
                 values.put(DBAccessHelper.ALBUMS_COUNT, numberOfAlbums);
                 values.put(DBAccessHelper.SONGS_COUNT, numberOfTracks);
                 values.put(DBAccessHelper.GENRE_SONG_COUNT, numberOfSongsInGenre);
+                values.put(DBAccessHelper.TP_IS_FAVORITE, isFav);
+                values.put(DBAccessHelper.TP_LOCAL_FILE, localFile);
 
                 //Add all the entries to the database to build the songs library.
                 mApp.getDBAccessHelper().getWritableDatabase().insert(DBAccessHelper.MUSIC_LIBRARY_TABLE,

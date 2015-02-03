@@ -117,6 +117,19 @@ public class DBAccessHelper extends SQLiteOpenHelper {
     public static final String ALBUMS_COUNT = "albums_count";
     public static final String SONGS_COUNT = "songs_count";
     public static final String GENRES_SONG_COUNT = "genres_song_count";
+
+    //Added by Ian
+    public static final String TP_IS_FAVORITE = "tp_is_favorite"; //IsFavorite
+    public static final String TP_LOCAL_FILE = "tp_local_file"; //Downloaded local file.
+
+    public static final String TP_FAV = "T";
+    public static final String TP_NON_FAV = "F";
+
+
+    public static final String META_TABLE = "MetaTable";
+    public static final String META_KEY = "key";
+    public static final String META_VALUE = "value";
+    public static final String META_KEY_LIB_VER = "lib_ver";
     
     //Playlist fields.
     public static final String PLAYLIST_ID = "playlist_id";
@@ -218,7 +231,8 @@ public class DBAccessHelper extends SQLiteOpenHelper {
 			    						   LAST_PLAYED_TIMESTAMP, SONG_SOURCE, SONG_ALBUM_ART_PATH,
 			    						   SONG_DELETED, ARTIST_ART_LOCATION, ALBUM_ID, 
 			    						   ARTIST_ID, GENRE_ID, GENRE_SONG_COUNT, 
-			    						   LOCAL_COPY_PATH, LIBRARIES, SAVED_POSITION };
+			    						   LOCAL_COPY_PATH, LIBRARIES, SAVED_POSITION,
+                                           TP_IS_FAVORITE, TP_LOCAL_FILE };
 		
 		String[] musicLibraryTableColTypes = new String[musicLibraryTableCols.length];
 		for (int i=0; i < musicLibraryTableCols.length; i++)
@@ -228,12 +242,22 @@ public class DBAccessHelper extends SQLiteOpenHelper {
 															  musicLibraryTableCols,
 															  musicLibraryTableColTypes);	
 
+
+        //Added by Ian
+        //Meta table.
+        String[] metaTableCols = { META_KEY, META_VALUE };
+        String[] metaTableColTypes = { "TEXT", "TEXT" };
+        String createMetaTable = buildCreateStatement(META_TABLE,
+                metaTableCols,
+                metaTableColTypes);
+
 		//Execute the CREATE statements.
 		db.execSQL(createMusicFoldersTable);
 		db.execSQL(createEqualizerTable);
 		db.execSQL(createEqualizerPresetsTable);
 		db.execSQL(createLibrariesTable);
 		db.execSQL(createMusicLibraryTable);
+        db.execSQL(createMetaTable);
 				
 	}
 
