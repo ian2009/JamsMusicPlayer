@@ -208,11 +208,11 @@ public class MainActivity extends FragmentActivity {
     		
     		switch (mCurrentFragmentId) {
     		case Common.ARTISTS_FRAGMENT:
-    			mCurrentFragment = getLayoutFragment(Common.ARTISTS_FRAGMENT);
-    			break;
+    			//mCurrentFragment = getLayoutFragment(Common.ARTISTS_FRAGMENT);
+    			//break;
     		case Common.ALBUM_ARTISTS_FRAGMENT:
-    			mCurrentFragment = getLayoutFragment(Common.ALBUM_ARTISTS_FRAGMENT);
-    			break;
+    			//mCurrentFragment = getLayoutFragment(Common.ALBUM_ARTISTS_FRAGMENT);
+    			//break;
     		case Common.ALBUMS_FRAGMENT:
     			mCurrentFragment = getLayoutFragment(Common.ALBUMS_FRAGMENT);
     			break;
